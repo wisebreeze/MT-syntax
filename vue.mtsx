@@ -1,4 +1,7 @@
 // require MT >= 2.16.0
+// Language: .lang
+// Version: 1.0.0
+// Repo: https://github.com/wisebreeze/MT-syntax
 {
 	name: [ "Vue", ".vue" ]
 	styles: [
