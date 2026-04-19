@@ -1,0 +1,28 @@
+// require MT >= 2.16.0
+{
+	name: [ "Lang", ".lang" ]
+	styles: [
+		"key", #1750EB, #6897BB
+		"paragraph", #606060$FFEDED, #A0A0A0$443034 @B
+		"comment", #606060, #A0A0A0 @I
+	]
+	contains: [
+		{
+			start: {match: /[\s\S](?=\S*\=)/}
+			end: {match: /(?=\=)/}
+			style: "key"
+		}
+		{
+			start: {match: /#/}
+			end: {match: /(?=\n)/}
+			style: "comment"
+			contains: [
+			  {
+    			start: {match: /(?<=##).*?/}
+    			end: {match: /(?=\n|$)/}
+    			style: "paragraph"
+    		}
+			]
+		}
+	]
+}
