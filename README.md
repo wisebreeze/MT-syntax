@@ -22,8 +22,8 @@
 3. 长按需要删除的语法，在弹出菜单后点击卸载
 
 ## 支持语法
-- [Vue](./mtsx/vue.mtsx)
-- [Lang](./mtsx/lang.mtsx)
+- [x] [Vue](./mtsx/vue.mtsx)
+- [x] [Lang](./mtsx/lang.mtsx)
 
 ## 更新日志
 更新内容详见 [CHANGELOG.md](CHANGELOG.md)
