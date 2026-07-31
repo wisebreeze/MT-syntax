@@ -1,0 +1,27 @@
+// require MT >= 2.16.0
+// Syntax: Lang
+// Version: v1.2
+// License: CC BY-NC 4.0
+// Repo: https://github.com/wisebreeze/MT-syntax
+
+// Author: QiE
+{
+  name: ["Lang", ".lang"]
+  styles: [
+    "comment", #777#FDD, #999#522
+    "key",     #0033B3,  #77AACB
+    "symbol",  #871094,  #D0AC78
+    "value",   #205060,  #B2A2E0
+  ]
+  contains: [
+    {
+      group: linkAll
+      contains: [
+        {match:/(?:[^=\n]+)/, 0:"key", 0:{match:/(?:\.)/, 0:"symbol"}}
+        {match:/(?:=)/, 0:"symbol"}
+        {match:/(?:[^\n\t]+)/, 0:"value"}
+      ]
+    }
+    {match:/[^\n]+/, 0:"comment"}
+  ]
+}
