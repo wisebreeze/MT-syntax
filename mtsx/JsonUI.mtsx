@@ -1,0 +1,148 @@
+// require MT >= 2.16.0
+// Syntax: JsonUI
+// Version: v1.55
+// License: CC BY-NC 4.0
+// Repo: https://github.com/wisebreeze/MT-syntax
+
+// Author: QiE
+{
+  name:["JsonUI", ".json", ".jsonui", ".json_ui"]
+  styles:[
+    "default", #333, #DADADA
+    "comment", #777#FDD, #999#522
+    "error", #F00#000, #F00#000, @BUI
+    "str", #067D17, #79B
+    "str2", #067D17, #6CB
+    "keyword", #7050E0, #E82
+    "var", #9E880D, #ED8
+    "expr", #7A0B86, #BAE
+    "enum", #E4267A, #AD8
+    "number", #1750EB, #5DD
+  ]
+  comment:{startsWith:"//"}
+  comment:{startsWith:"/*", endsWith:"*/"}
+  bracketPairs:["{}", "[]", "()"]
+  codeFormatter:#BUILT_IN_JSON_FORMATTER#
+  codeShrinker:#BUILT_IN_JSON_SHRINKER#
+  defines:[
+    "FAIL":{match:/\n+/} // 多行失败匹配
+    "REFERENCE_FAIL":{match:/(?:[\n@])+/} // 引用失败匹配
+    "VAR_FAIL":{match:/(?:[\$\#])+/} // 变量失败匹配
+    "Number-source":/[+-]?(0|[1-9][0-9]*)(?:\.[0-9]+)?/ // 纯数字
+    "Number":{match:include("Number-source")+/([eE][+-]?[0-9]+)?\b/,0:"number"} // 数字及科学记数法适配
+    "Operator":/[-\/*+=<>]/ // 运算符
+    "Expr-end":{match:/(?=([\)\" ]|/+include("Operator")+/))/} // 表达式结束匹配
+    "Escape":[ // 转义
+      {match:/(?:\\([btnfr"'\\\/]|u[a-fA-F0-9]{4}))+/,0:"keyword"}
+      {match:/(?:\\.)+/,0:"error"}
+    ]
+    "Reference":{ // 引用匹配
+      style: "expr"
+      start:{match:/(?:@)/,0:"keyword"}
+      end:{match:/(?=")/}
+      contains:[
+        {include:"REFERENCE_FAIL"}=>FAIL
+        {
+          style:"!!var" // 控件名为变量
+          start:{match:/(?<=@)\$/}
+          end:{match:/(?=")/}
+          contains:[{include:"REFERENCE_FAIL"}=>FAIL]
+        }
+        {
+          style:"!!keyword" // 控件名
+          start:{match:/(?:\.)/,0:"enum"}
+          end:{match:/(?=")/}
+          contains:[{include:"REFERENCE_FAIL"}=>FAIL]
+        }
+      ]
+    }
+    "Expr":[
+      {match:keywordsToRegex("not or and")+/|/+include("Operator"),0:"enum"} // 运算符及 not or and
+      {match:/(?:[\(\)])/,0:"expr"} // 括号
+      {
+        style:"str2" // 字符串
+        start:{match:/'/}
+        end:{match:/'/}
+        mustMatchEnd:true
+        contains:[
+          {include:"FAIL"}=>FAIL
+          {include:"Escape"}
+        ]
+      }
+      {
+        style:"keyword" // 硬编码
+        start:{match:/#/}
+        end:{include:"Expr-end"}
+        contains:[
+          {include:"FAIL"}=>FAIL
+          {include:"VAR_FAIL"}=>FAIL
+        ]
+      }
+      {
+        style:"var" // 变量
+        start:{match:/\$/}
+        end:{include:"Expr-end"}
+        contains:[
+          {include:"FAIL"}=>FAIL
+          {include:"VAR_FAIL"}=>FAIL
+        ]
+      }
+    ]
+  ]
+  contains: [
+    {
+      style:"str" // 字符串
+      start:{match:/"/}
+      end:{match:/"/}
+      mustMatchEnd:true
+      contains:[
+        {include:"FAIL"}=>FAIL
+        {include:"Escape"} // 转义
+        {include:"Reference"} // 引用
+        {
+          style:"number" // 简单数字运算
+          start:{match:/(?<=")/+include("Number-source")+/(?:%|px)/}
+          end:{match:/(?=")/}
+          contains:[
+            {include:"FAIL"}=>FAIL
+            {match:/(?:[+-])/,0:"enum"} // + - 符号
+          ]
+        }
+        {
+          start:{match:/(?<=")(?=\()/} // 表达式
+          end:{match:/(?=")/}
+          contains:[
+            {include:"FAIL"}=>FAIL
+            {include:"Expr"}
+            {match:include("Number-source")+/\b/,0:"number"} // 数字
+          ]
+        }
+        {
+          style:"expr" // 硬编码
+          start:{match:/(?<=")#/}
+          end:{match:/(?=")/}
+          contains:[
+            {include:"FAIL"}=>FAIL
+            {include:"Expr"}
+            {include:"VAR_FAIL"}=>FAIL
+          ]
+        }
+        {
+          style:"var"// 变量
+          start:{match:/(?<=")\$/}
+          end:{match:/(?=")/}
+          contains:[
+            {include:"FAIL"}=>FAIL
+            {match:/\|(?!default)/}=>FAIL // |后非default则匹配失败
+            {include:"Expr"}
+            {include:"VAR_FAIL"}=>FAIL
+            {include:"Reference"} // 匹配 $xxx@xxx的情况
+            {match:/(\|)(default)(?=")/,1:"enum",2:"keyword"} // 匹配 |default
+          ]
+        }
+      ]
+    }
+    {include:"Number"} // 数字（包括科学记数法）
+    {match:keywordsToRegex("false true null"),0:"enum"} // 布尔值
+  ]
+}
