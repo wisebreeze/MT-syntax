@@ -24,6 +24,8 @@
 ## 支持语法
 - [x] [Vue](./mtsx/vue.mtsx)
 - [x] [Lang](./mtsx/lang.mtsx)
+- [x] [JSON UI (CC BY-NC 4.0)](./mtsx/JsonUI.mtsx)
+- [x] [Lang v1.2 (CC BY-NC 4.0)](./mtsx/lang_v1.2.mtsx)
 
 ## 更新日志
 更新内容详见 [CHANGELOG.md](CHANGELOG.md)
