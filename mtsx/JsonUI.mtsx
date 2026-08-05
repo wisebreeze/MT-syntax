@@ -1,148 +1,121 @@
 // require MT >= 2.16.0
 // Syntax: JsonUI
-// Version: v1.55
+// Version: v1.6
 // License: CC BY-NC 4.0
 // Repo: https://github.com/wisebreeze/MT-syntax
 
 // Author: QiE
 {
-  name:["JsonUI", ".json", ".jsonui", ".json_ui"]
+  name:["JsonUI", ".json", ".jsonui", ".json_ui", ".material"]
   styles:[
-    "default", #333, #DADADA
-    "comment", #777#FDD, #999#522
-    "error", #F00#000, #F00#000, @BUI
-    "str", #067D17, #79B
-    "str2", #067D17, #6CB
-    "keyword", #7050E0, #E82
-    "var", #9E880D, #ED8
-    "expr", #7A0B86, #BAE
-    "enum", #E4267A, #AD8
-    "number", #1750EB, #5DD
+    "default", #333,    #DADADA
+    "comment", #777#FDD,#999#522
+    "error",   #F00#000,#F00#000, @BS
+    "str",     #047,    #79B
+    "subStr",  #066,    #6CB
+    "keyword", #A50,    #E82
+    "var",     #970,    #ED8
+    "expr",    #809,    #BAE
+    "operator",#071,    #AD8
+    "number",  #06E,    #5DD
   ]
   comment:{startsWith:"//"}
-  comment:{startsWith:"/*", endsWith:"*/"}
-  bracketPairs:["{}", "[]", "()"]
+  comment:{startsWith:"/*",endsWith:"*/"}
+  bracketPairs:["{}","[]","()"]
   codeFormatter:#BUILT_IN_JSON_FORMATTER#
   codeShrinker:#BUILT_IN_JSON_SHRINKER#
   defines:[
-    "FAIL":{match:/\n+/} // 多行失败匹配
-    "REFERENCE_FAIL":{match:/(?:[\n@])+/} // 引用失败匹配
-    "VAR_FAIL":{match:/(?:[\$\#])+/} // 变量失败匹配
-    "Number-source":/[+-]?(0|[1-9][0-9]*)(?:\.[0-9]+)?/ // 纯数字
-    "Number":{match:include("Number-source")+/([eE][+-]?[0-9]+)?\b/,0:"number"} // 数字及科学记数法适配
-    "Operator":/[-\/*+=<>]/ // 运算符
-    "Expr-end":{match:/(?=([\)\" ]|/+include("Operator")+/))/} // 表达式结束匹配
+    "AtSign":{match:/@/}
+    "Int":/-?(?:0|[1-9][0-9]*)/ // 整数
+    "Number":include("Int")+/(?:\.[0-9]+)?/ // 数字
+    "Operator":/[-+*\/=<>]/ // 普通运算符
+    "ExprEnd":{match:/(?m)(?=(?:[\s()"]|/+include("Operator")+/|$))/} // 表达式内硬编码或变量结束
+    "StrEnd":{match:/(?m)(?="|$)/} // 字符串结束
     "Escape":[ // 转义
-      {match:/(?:\\([btnfr"'\\\/]|u[a-fA-F0-9]{4}))+/,0:"keyword"}
+      {match:/(?:\\(?:[btnfr"'\\\/]|u[a-fA-F0-9]{4}))+/,0:"keyword"}
       {match:/(?:\\.)+/,0:"error"}
     ]
-    "Reference":{ // 引用匹配
-      style: "expr"
-      start:{match:/(?:@)/,0:"keyword"}
-      end:{match:/(?=")/}
+    "Reference":{ // 引用
+      style:"expr"
+      start:{match:/@/,0:"keyword"}
+      end:{include:"StrEnd"}
       contains:[
-        {include:"REFERENCE_FAIL"}=>FAIL
+        {include:"AtSign"}=>FAIL
         {
-          style:"!!var" // 控件名为变量
+          style:"var" // @$xxx
           start:{match:/(?<=@)\$/}
-          end:{match:/(?=")/}
-          contains:[{include:"REFERENCE_FAIL"}=>FAIL]
+          end:{include:"StrEnd"}
+          contains:[{include:"AtSign"}=>FAIL]
         }
         {
-          style:"!!keyword" // 控件名
-          start:{match:/(?:\.)/,0:"enum"}
-          end:{match:/(?=")/}
-          contains:[{include:"REFERENCE_FAIL"}=>FAIL]
+          style:"keyword" // @x.y 中的 .y
+          start:{match:/\./,0:"subStr"}
+          end:{include:"StrEnd"}
+          contains:[{include:"AtSign"}=>FAIL]
         }
       ]
     }
-    "Expr":[
-      {match:keywordsToRegex("not or and")+/|/+include("Operator"),0:"enum"} // 运算符及 not or and
-      {match:/(?:[\(\)])/,0:"expr"} // 括号
-      {
-        style:"str2" // 字符串
-        start:{match:/'/}
-        end:{match:/'/}
-        mustMatchEnd:true
-        contains:[
-          {include:"FAIL"}=>FAIL
-          {include:"Escape"}
-        ]
-      }
-      {
-        style:"keyword" // 硬编码
-        start:{match:/#/}
-        end:{include:"Expr-end"}
-        contains:[
-          {include:"FAIL"}=>FAIL
-          {include:"VAR_FAIL"}=>FAIL
-        ]
-      }
-      {
-        style:"var" // 变量
-        start:{match:/\$/}
-        end:{include:"Expr-end"}
-        contains:[
-          {include:"FAIL"}=>FAIL
-          {include:"VAR_FAIL"}=>FAIL
-        ]
-      }
-    ]
   ]
-  contains: [
+  contains:[
     {
-      style:"str" // 字符串
+      style:"str" // "xxx"
       start:{match:/"/}
-      end:{match:/"/}
+      end:{match:/(?m)"|$/}
       mustMatchEnd:true
       contains:[
-        {include:"FAIL"}=>FAIL
-        {include:"Escape"} // 转义
-        {include:"Reference"} // 引用
+        {include:"Escape"}
+        {include:"Reference"}
+        {match:/(?<="!)(#[A-Fa-f0-9]{3,8})(?=!")/,1:"parseColor(auto,0,HEX)"} // !#hex! 预览颜色
         {
-          style:"number" // 简单数字运算
-          start:{match:/(?<=")/+include("Number-source")+/(?:%|px)/}
-          end:{match:/(?=")/}
-          contains:[
-            {include:"FAIL"}=>FAIL
-            {match:/(?:[+-])/,0:"enum"} // + - 符号
-          ]
+          style:"number" // 百分比、像素运算
+          start:{match:/(?<=")(?=/+include("Number")+/(?:px|%))/}
+          end:{include:"StrEnd"}
+          contains:[{match:/[+-]/,0:"operator"}] // + -
         }
         {
           start:{match:/(?<=")(?=\()/} // 表达式
-          end:{match:/(?=")/}
+          end:{include:"StrEnd"}
           contains:[
-            {include:"FAIL"}=>FAIL
-            {include:"Expr"}
-            {match:include("Number-source")+/\b/,0:"number"} // 数字
+            {match:keywordsToRegex("not or and")+/|/+include("Operator"),0:"operator"} // 逻辑运算符及普通运算符
+            {match:include("Int")+/(?:\.0+)?/+/\b/,0:"number"} // 数字
+            {match:/[()]/,0:"expr"} // 括号
+            {
+              style:"subStr" // 'xxx'
+              start:{match:/'/}
+              end:{match:/(?m)'|$/}
+              mustMatchEnd:true
+              contains:[{include:"Escape"}]
+            }
+            {
+              style:"keyword" // #xxx
+              start:{match:/#/}
+              end:{include:"ExprEnd"}
+            }
+            {
+              style:"var" // $xxx
+              start:{match:/\$/}
+              end:{include:"ExprEnd"}
+            }
           ]
         }
         {
-          style:"expr" // 硬编码
+          style:"expr" // #xxx
           start:{match:/(?<=")#/}
-          end:{match:/(?=")/}
-          contains:[
-            {include:"FAIL"}=>FAIL
-            {include:"Expr"}
-            {include:"VAR_FAIL"}=>FAIL
-          ]
+          end:{include:"StrEnd"}
         }
         {
-          style:"var"// 变量
+          style:"var" // $xxx
           start:{match:/(?<=")\$/}
-          end:{match:/(?=")/}
+          end:{include:"StrEnd"}
           contains:[
-            {include:"FAIL"}=>FAIL
-            {match:/\|(?!default)/}=>FAIL // |后非default则匹配失败
-            {include:"Expr"}
-            {include:"VAR_FAIL"}=>FAIL
-            {include:"Reference"} // 匹配 $xxx@xxx的情况
-            {match:/(\|)(default)(?=")/,1:"enum",2:"keyword"} // 匹配 |default
+            {match:/\|(?!default")/}=>FAIL // |后非default
+            {match:/(\|)default(?=")/,0:"keyword",1:"subStr"} // |default
+            {include:"Reference"}
           ]
         }
       ]
     }
-    {include:"Number"} // 数字（包括科学记数法）
-    {match:keywordsToRegex("false true null"),0:"enum"} // 布尔值
+    {match:include("Number")+/(?:[eE][+-]?[0-9]+)?\b/,0:"number"} // 数字（支持科学记数法）
+    {match:keywordsToRegex("false true null"),0:"operator"} // 布尔值
   ]
 }
